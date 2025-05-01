@@ -137,13 +137,17 @@ app_license = "mit"
 # ---------------
 # Hook on document methods and events
 
-# doc_events = {
-# 	"*": {
-# 		"on_update": "method",
-# 		"on_cancel": "method",
-# 		"on_trash": "method"
-# 	}
-# }
+doc_events = {
+	# "*": {
+	# 	"on_update": "method",
+	# 	"on_cancel": "method",
+	# 	"on_trash": "method"
+	# }
+
+    "HD Ticket": {
+        "on_update": "hdlarkdar.event_handlers.ticket_reply",
+    }
+}
 
 # Scheduled Tasks
 # ---------------
