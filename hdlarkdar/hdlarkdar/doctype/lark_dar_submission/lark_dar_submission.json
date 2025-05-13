@@ -1,30 +1,23 @@
 {
  "actions": [],
  "allow_rename": 1,
- "autoname": "format:LDS-{######}-{hd_ticket}",
- "creation": "2025-04-28 15:29:17.580384",
+ "autoname": "format:LSD-{#####}",
+ "creation": "2025-05-08 16:38:44.445914",
  "doctype": "DocType",
  "engine": "InnoDB",
  "field_order": [
-  "dar_fields_section",
-  "customer",
   "hd_ticket",
   "assigned_to",
   "reply_date",
-  "customer_deal",
-  "subject"
+  "subject",
+  "customer_deal"
  ],
  "fields": [
   {
-   "fieldname": "dar_fields_section",
-   "fieldtype": "Section Break",
-   "label": "DAR Fields"
-  },
-  {
-   "fieldname": "customer",
+   "fieldname": "hd_ticket",
    "fieldtype": "Link",
-   "label": "Customer",
-   "options": "HD Customer"
+   "label": "HD Ticket",
+   "options": "HD Ticket"
   },
   {
    "fieldname": "assigned_to",
@@ -33,32 +26,27 @@
    "options": "HD Agent"
   },
   {
-   "fieldname": "customer_deal",
-   "fieldtype": "Small Text",
-   "label": "Customer Deal"
-  },
-  {
-   "fieldname": "subject",
-   "fieldtype": "Small Text",
-   "label": "Subject"
-  },
-  {
-   "fieldname": "hd_ticket",
-   "fieldtype": "Link",
-   "label": "HD Ticket",
-   "options": "HD Ticket"
-  },
-  {
    "fieldname": "reply_date",
    "fieldtype": "Datetime",
    "label": "Reply Date"
+  },
+  {
+   "fieldname": "subject",
+   "fieldtype": "Data",
+   "label": "Subject"
+  },
+  {
+   "fieldname": "customer_deal",
+   "fieldtype": "Link",
+   "label": "Customer Deal",
+   "options": "Servio Registry Deal"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-04-30 09:24:44.450310",
- "modified_by": "tester@gmail.com",
+ "modified": "2025-05-08 16:41:41.461881",
+ "modified_by": "Administrator",
  "module": "Hdlarkdar",
  "name": "Lark DAR Submission",
  "naming_rule": "Expression",

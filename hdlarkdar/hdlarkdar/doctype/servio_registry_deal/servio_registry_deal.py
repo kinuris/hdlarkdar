@@ -5,5 +5,5 @@
 from frappe.model.document import Document
 
 
-class LarkHDSettings(Document):
+class ServioRegistryDeal(Document):
 	pass

@@ -144,9 +144,13 @@ doc_events = {
 	# 	"on_trash": "method"
 	# }
 
-    "HD Ticket": {
-        "on_update": "hdlarkdar.event_handlers.ticket_reply",
-    }
+    # "HD Ticket": {
+    #     "on_update": "hdlarkdar.event_handlers.ticket_reply",
+    # },
+	"Communication": {
+		"before_insert": "hdlarkdar.event_handlers.ticket_reply",
+		"after_insert": "hdlarkdar.event_handlers.confirmed_ticket_reply"
+	}
 }
 
 # Scheduled Tasks

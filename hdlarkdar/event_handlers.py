@@ -1,77 +1,74 @@
 import frappe
 import requests
 
-from frappe.utils import now, nowdate
+from frappe.utils import now
+
+def get_webhook_url():
+    settings = frappe.get_cached_doc("Lark DAR Settings")
+
+    return settings.webhook
+
+def is_webhook_required():
+    settings = frappe.get_cached_doc("Lark DAR Settings")
+
+    return settings.require_webhook
+
+def is_admin_reply_disallowed():
+    settings = frappe.get_cached_doc("Lark DAR Settings")
+
+    return settings.disallow_admin_reply
 
 def ticket_reply(doc, method):
-    current_user = frappe.session.user
-    agent_name = frappe.get_value(
-        "HD Agent",
-        {"user": current_user},
-        "agent_name"
-    )
+    if doc.reference_doctype != "HD Ticket":
+        return
 
-    hd_ticket_name = doc.name
-    subject = doc.subject or ""
+    hd_ticket = frappe.get_doc("HD Ticket", doc.reference_name)
 
-    if doc.customer:
-        customer = doc.customer
-    else:
-        raised_by = doc.raised_by
-        contact = frappe.db.get_value(
-            "Contact",
-            {"email_id": raised_by},
-            "company_name"
-        )
+    if not hd_ticket.servio_deal:
+        frappe.throw("Ticket must have a deal, assign a valid Servio Deal.")
 
-        customer = frappe.db.get_value(
-            "HD Customer",
-            {"name": contact},
-            "name"
-        )
+    if doc.user == "Administrator" and is_admin_reply_disallowed():
+        frappe.throw("Administrator replies are not allowed. See Lark DAR Settings.")
 
-    today = nowdate()
-    start_of_day = f"{today} 00:00:00"
-    end_of_day = f"{today} 23:59:59"
+    webhook_url = get_webhook_url()
+    if not webhook_url and is_webhook_required():
+        frappe.throw("Webhook URL is not set in Lark DAR Settings. See Lark DAR Settings.") 
 
-    exists = frappe.db.exists(
-        "Lark DAR Submission",
-        {
-            "customer": customer,
-            "hd_ticket": hd_ticket_name,
-            "subject": subject,
-            "reply_date": ["between", (start_of_day, end_of_day)],
-        },
-    )
+def confirmed_ticket_reply(doc, method):
+    hd_ticket = frappe.get_doc("HD Ticket", doc.reference_name)
+    webhook_url = get_webhook_url()
 
-    if not exists:
-        try:
-            new_submission = frappe.get_doc({
-                "doctype": "Lark DAR Submission",
-                "customer": customer,
-                "hd_ticket": hd_ticket_name,
-                "assigned_to": current_user,
-                "reply_date": now(),
-                "subject": subject,
-                "customer_deal": "N/A",
-            })
+    subject = doc.subject
+    agent_name = doc.user
 
-            response = requests.post(
-                'https://serviotech.sg.larksuite.com/base/workflow/webhook/event/W2OTa5iEiwWjCfhhB74lYKNCgWe',
-                json={
-                    "Client Name": customer,
-                    "Deal Name": new_submission.customer_deal,
-                    "Submitted By": agent_name,
-                    "Specific Activity": subject,
-                }
-            )
+    servio_deal = frappe.get_doc("Servio Registry Deal", hd_ticket.servio_deal)
+    servio_deal_id = servio_deal.record_id
 
-            print("Status Code: ", response.status_code)
-            print("Response Body: ", response.json())
+    new_submission = frappe.get_doc({
+        "doctype": "Lark DAR Submission",
+        "hd_ticket": hd_ticket.name,
+        "assigned_to": doc.user,
+        "reply_date": now(),
+        "subject": subject,
+        "customer_deal": servio_deal.name,
+    })
 
-            new_submission.insert(ignore_permissions=True)
-            
-            frappe.db.commit()
-            frappe.log_info(f"Created Lark DAR Submission for {hd_ticket_name}", "Lark DAR Submission Success")
-        except Exception as e:
-            frappe.log_error(f"Failed to create Lark DAR Submission for {hd_ticket_name}: {e}", "Lark DAR Submission Error")
+    new_submission.insert(ignore_permissions=True)
+
+    frappe.db.commit()
+
+    body = {
+        "Deal-Name": servio_deal_id,
+        "Submitted-By": agent_name,
+        "Specific-Activity": subject,
+        "Communication-Link": f"https://erp.serviotech.com{doc.get_url()}"
+    }
+
+    if webhook_url:
+        requests.post(webhook_url, json=body)
+
+    print("Doc Deal:", servio_deal)
+    print("Comm Link:", f"https://erp.serviotech.com{doc.get_url()}")
+    print("Deal ID:", servio_deal_id)
+    print("Doc Subject:", subject)
+    print("Doc User:", agent_name) 

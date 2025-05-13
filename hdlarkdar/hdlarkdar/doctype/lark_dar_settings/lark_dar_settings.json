@@ -1,39 +1,47 @@
 {
  "actions": [],
  "allow_rename": 1,
- "creation": "2025-05-01 08:36:31.468728",
+ "creation": "2025-05-09 09:02:57.788473",
  "doctype": "DocType",
  "engine": "InnoDB",
  "field_order": [
-  "settings_section",
-  "app_id",
-  "app_secret"
+  "webhook_section",
+  "webhook",
+  "require_webhook",
+  "disallow_admin_reply"
  ],
  "fields": [
   {
-   "fieldname": "settings_section",
+   "fieldname": "webhook_section",
    "fieldtype": "Section Break",
-   "label": "Settings"
+   "label": "Webhook"
   },
   {
-   "fieldname": "app_id",
+   "fieldname": "webhook",
    "fieldtype": "Data",
-   "label": "App ID"
+   "label": "Lark Webhook"
   },
   {
-   "fieldname": "app_secret",
-   "fieldtype": "Password",
-   "label": "App Secret"
+   "default": "1",
+   "fieldname": "require_webhook",
+   "fieldtype": "Check",
+   "label": "Require Webhook on Reply"
+  },
+  {
+   "default": "0",
+   "fieldname": "disallow_admin_reply",
+   "fieldtype": "Check",
+   "label": "Disallow Admin Reply"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "issingle": 1,
  "links": [],
- "modified": "2025-05-01 08:37:28.559789",
+ "modified": "2025-05-09 09:31:13.794108",
  "modified_by": "Administrator",
  "module": "Hdlarkdar",
- "name": "Lark HD Settings",
+ "name": "Lark DAR Settings",
  "owner": "Administrator",
  "permissions": [
   {

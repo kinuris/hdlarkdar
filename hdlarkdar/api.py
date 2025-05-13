@@ -1,91 +1,68 @@
 import frappe
 import json
 
-import requests
-import base64
+@frappe.whitelist()
+def sync_deals():
+    request_body = frappe.request.data
 
-def get_lark_credentials():
-    site_config = frappe.get_cached_doc("Lark HD Settings")
+    if not request_body:
+        frappe.response.status_code = 400
+        frappe.response.message = "Request body is empty"
+        return
+    try:
+        json_data = json.loads(request_body)
+    except Exception as e:
+        frappe.response.status_code = 400
+        frappe.response.message = f"Invalid JSON: {e}"
+        return
 
-    app_id = site_config.app_id
-    app_secret = site_config.get_password("app_secret")
+    if not isinstance(json_data, dict):
+        frappe.response.status_code = 400
+        frappe.response.message = "Request data must be a JSON object."
+        return
 
-    if not app_id or not app_secret:
-        frappe.throw("Lark App ID or App Secret not configured in Lark Settings.")
+    created_count = 0
+    updated_count = 0
 
-    return app_id, app_secret
+    for item in json_data.get("items", []):
+        fields = item.get("fields", {})
 
-@frappe.whitelist(allow_guest=True)
-def oauth2_login(code: str, state: str):
-    """
-	Callback for processing code and state for user added providers
-	"""
+        if not fields:
+            continue
 
-    parsed = base64.b64decode(state) 
-    parsed = json.loads(parsed)
-    headers = {
-        'Content-Type': 'application/json',
-    } 
+        record_id = fields.get("Record ID | Deals") 
 
-    app_id, app_secret = get_lark_credentials()
-    body = {
-        "app_id": app_id,
-        "app_secret": app_secret,
+        # Sanitize the Deal Name 
+        fields["HDDealName"] = fields.get("HDDealName").replace("<", "←").replace(">", "→")[:140]
+
+        try:
+            if frappe.db.exists("Servio Registry Deal", {"record_id": record_id}):
+                doc = frappe.get_doc("Servio Registry Deal", {"record_id": record_id})
+                updated_count += 1
+            else:
+                duplicate = frappe.db.exists("Servio Registry Deal", {"deal_name": fields.get("HDDealName")})
+                if duplicate:
+                    continue
+
+                doc = frappe.new_doc('Servio Registry Deal')
+                doc.record_id = record_id
+                created_count += 1
+            
+            doc.company = fields.get("Company")
+            doc.status = fields.get("Status")
+            doc.deal_name = fields.get("HDDealName")
+
+            doc.save(ignore_permissions=True)
+
+            if doc.name != doc.deal_name:
+                frappe.rename_doc("Servio Registry Deal", doc.name, doc.deal_name)
+
+        except Exception as e:
+            frappe.log_error(f"Error processing record_id {record_id}: {e}", "HDLarkDar Sync Error")
+
+    frappe.db.commit()
+
+    return {
+        "created": created_count,
+        "updated": updated_count
     }
-
-    cache = frappe.cache()
-    cached_app_tok = cache.get_value("app_access_token")
-
-    if cached_app_tok:
-        app_access_token = cached_app_tok
-        print("Using cached app access token:", app_access_token)
-    else:
-        response = requests.post('https://open.larksuite.com/open-apis/auth/v3/app_access_token/internal', headers=headers, json=body)
-        response = response.json()
-        app_access_token = response.get("app_access_token")
-
-        cache.set_value("app_access_token", app_access_token, expires_in_sec=3600)
-
-    headers = {
-        'Authorization': f'Bearer {app_access_token}',
-        'Content-Type': 'application/json'
-    }
-
-    body = {
-        "grant_type": "authorization_code",
-        "code": code,
-    }
-
-    response = requests.post('https://open.larksuite.com/open-apis/authen/v1/oidc/access_token', headers=headers, json=body)
-    response = response.json()
-
-    print("User Token Response: ", response)
-
-    user_access_token = response.get('data').get("access_token")
-    headers = {
-        'Authorization': f'Bearer {user_access_token}',
-        'Content-Type': 'application/json'
-    }
-
-    response = requests.get('https://open.larksuite.com/open-apis/authen/v1/user_info', headers=headers)
-    response = response.json()
-
-    email = response.get('data').get("email")
-    user_row = frappe.get_list("User",
-        filters={"email": email, "enabled": 1},
-        fields=["name"],
-        limit_page_length=1,
-        ignore_permissions=True,
-    )
-
-    if not user_row:
-        frappe.throw("User not found", frappe.AuthenticationError)
-
-    user_name = user_row[0].name
-
-    login_manager = frappe.auth.LoginManager()
-    login_manager.user = user_name
-    login_manager.post_login()
-
-    frappe.local.response["type"] = "redirect"
-    frappe.local.response["location"] = "/helpdesk"
