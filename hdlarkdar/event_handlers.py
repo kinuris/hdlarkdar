@@ -18,13 +18,18 @@ def is_admin_reply_disallowed():
 
     return settings.disallow_admin_reply
 
+def is_servio_deal_required():
+    settings = frappe.get_cached_doc("Lark DAR Settings")
+
+    return settings.require_servio_deal
+
 def ticket_reply(doc, method):
     if doc.reference_doctype != "HD Ticket":
         return
 
     hd_ticket = frappe.get_doc("HD Ticket", doc.reference_name)
 
-    if not hd_ticket.servio_deal:
+    if not hd_ticket.servio_deal and is_servio_deal_required():
         frappe.throw("Ticket must have a deal, assign a valid Servio Deal.")
 
     if doc.user == "Administrator" and is_admin_reply_disallowed():

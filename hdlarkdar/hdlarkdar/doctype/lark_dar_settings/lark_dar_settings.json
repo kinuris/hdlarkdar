@@ -7,6 +7,7 @@
  "field_order": [
   "webhook_section",
   "webhook",
+  "require_servio_deal",
   "require_webhook",
   "disallow_admin_reply"
  ],
@@ -32,13 +33,19 @@
    "fieldname": "disallow_admin_reply",
    "fieldtype": "Check",
    "label": "Disallow Admin Reply"
+  },
+  {
+   "default": "0",
+   "fieldname": "require_servio_deal",
+   "fieldtype": "Check",
+   "label": "Require Servio Deal on Reply"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "issingle": 1,
  "links": [],
- "modified": "2025-05-09 09:31:13.794108",
+ "modified": "2025-05-15 09:05:08.008459",
  "modified_by": "Administrator",
  "module": "Hdlarkdar",
  "name": "Lark DAR Settings",
