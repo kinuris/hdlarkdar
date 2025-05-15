@@ -2,6 +2,7 @@ import frappe
 import requests
 
 from frappe.utils import now
+from datetime import datetime
 
 def get_webhook_url():
     settings = frappe.get_cached_doc("Lark DAR Settings")
@@ -66,18 +67,24 @@ def confirmed_ticket_reply(doc, method):
     new_submission.insert(ignore_permissions=True)
     frappe.db.commit()
 
+    # parse the timestamp string and convert to UNIX epoch (seconds)
+    dt = datetime.strptime(doc.creation, "%Y-%m-%d %H:%M:%S.%f")
+    submitted_at = int(dt.timestamp())
+
     body = {
         "Deal-Name": servio_deal_id,
         "Submitted-By": agent_name,
         "Specific-Activity": subject,
-        "Communication-Link": f"https://erp.serviotech.com{doc.get_url()}"
+        "Communication-Link": f"https://erp.serviotech.com{doc.get_url()}",
+        "Submitted-At": submitted_at,
     }
 
     if webhook_url:
         requests.post(webhook_url, json=body)
 
     # debug logs
-    print("Deal ID:", servio_deal_id)
-    print("Comm Link:", f"https://erp.serviotech.com{doc.get_url()}")
-    print("Subject:", subject)
-    print("User:", agent_name)
+    # print("Deal ID:", servio_deal_id)
+    # print("Comm Link:", f"https://erp.serviotech.com{doc.get_url()}")
+    # print("Subject:", subject)
+    # print("User:", agent_name)
+    # print("Submitted At:", submitted_at)
