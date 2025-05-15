@@ -69,7 +69,7 @@ def confirmed_ticket_reply(doc, method):
 
     # parse the timestamp string and convert to UNIX epoch (seconds)
     dt = datetime.strptime(doc.creation, "%Y-%m-%d %H:%M:%S.%f")
-    submitted_at = int(dt.timestamp())
+    submitted_at = int(dt.timestamp()) * 1000
 
     body = {
         "Deal-Name": servio_deal_id,
