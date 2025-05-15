@@ -46,8 +46,13 @@ def confirmed_ticket_reply(doc, method):
     subject = doc.subject
     agent_name = doc.user
 
-    servio_deal = frappe.get_doc("Servio Registry Deal", hd_ticket.servio_deal)
-    servio_deal_id = servio_deal.record_id
+    # Determine servio deal ID or None
+    servio_deal_id = None
+    customer_deal = None
+    if hd_ticket.servio_deal:
+        servio_deal = frappe.get_doc("Servio Registry Deal", hd_ticket.servio_deal)
+        servio_deal_id = servio_deal.record_id
+        customer_deal = servio_deal.name
 
     new_submission = frappe.get_doc({
         "doctype": "Lark DAR Submission",
@@ -55,11 +60,10 @@ def confirmed_ticket_reply(doc, method):
         "assigned_to": doc.user,
         "reply_date": now(),
         "subject": subject,
-        "customer_deal": servio_deal.name,
+        "customer_deal": customer_deal,
     })
 
     new_submission.insert(ignore_permissions=True)
-
     frappe.db.commit()
 
     body = {
@@ -72,8 +76,8 @@ def confirmed_ticket_reply(doc, method):
     if webhook_url:
         requests.post(webhook_url, json=body)
 
-    print("Doc Deal:", servio_deal)
-    print("Comm Link:", f"https://erp.serviotech.com{doc.get_url()}")
+    # debug logs
     print("Deal ID:", servio_deal_id)
-    print("Doc Subject:", subject)
-    print("Doc User:", agent_name) 
+    print("Comm Link:", f"https://erp.serviotech.com{doc.get_url()}")
+    print("Subject:", subject)
+    print("User:", agent_name)
