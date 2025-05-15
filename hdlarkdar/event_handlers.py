@@ -75,8 +75,8 @@ def confirmed_ticket_reply(doc, method):
         "Deal-Name": servio_deal_id,
         "Submitted-By": agent_name,
         "Specific-Activity": subject,
-        "Communication-Link": f"https://erp.serviotech.com{doc.get_url()}",
         "Submitted-At": submitted_at,
+        "Communication-Link": f"https://erp.serviotech.com{doc.get_url()}",
     }
 
     if webhook_url:
