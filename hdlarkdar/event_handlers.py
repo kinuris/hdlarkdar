@@ -30,24 +30,26 @@ def ticket_reply(doc, method):
 
     hd_ticket = frappe.get_doc("HD Ticket", doc.reference_name)
 
-    if not hd_ticket.servio_deal and is_servio_deal_required():
+    if not hd_ticket.servio_deal and is_servio_deal_required() and doc.recipients != None:
         frappe.throw("Ticket must have a deal, assign a valid Servio Deal.")
 
-    if doc.user == "Administrator" and is_admin_reply_disallowed():
+    if doc.user == "Administrator" and is_admin_reply_disallowed() and doc.recipients != None:
         frappe.throw("Administrator replies are not allowed. See Lark DAR Settings.")
 
     webhook_url = get_webhook_url()
-    if not webhook_url and is_webhook_required():
+    if not webhook_url and is_webhook_required() and doc.recipients != None:
         frappe.throw("Webhook URL is not set in Lark DAR Settings. See Lark DAR Settings.") 
 
 def confirmed_ticket_reply(doc, method):
+    if doc.recipients == None:
+        return
+
     hd_ticket = frappe.get_doc("HD Ticket", doc.reference_name)
     webhook_url = get_webhook_url()
 
     subject = doc.subject
     agent_name = doc.user
 
-    # Determine servio deal ID or None
     servio_deal_id = None
     customer_deal = None
     if hd_ticket.servio_deal:
@@ -74,9 +76,8 @@ def confirmed_ticket_reply(doc, method):
     body = {
         "Deal-Name": servio_deal_id,
         "Submitted-By": agent_name,
-        "Specific-Activity": subject,
+        "Specific-Activity": f"Ticket Resolution: {subject} - {doc.get_url()}",
         "Submitted-At": submitted_at,
-        "Communication-Link": f"https://erp.serviotech.com{doc.get_url()}",
     }
 
     if webhook_url:
